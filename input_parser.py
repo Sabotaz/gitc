@@ -10,7 +10,6 @@ def init_game():
     for i in range(config.LINK_COUNT):
         factory_1, factory_2, distance = map(int, input().split())
         add_factory_link(factory_1, factory_2, distance)
-    utils.err(factory_links)
     
 def init_loop():
     reset_attackers()

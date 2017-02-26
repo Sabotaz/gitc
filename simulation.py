@@ -14,7 +14,14 @@ def get_best_orders():
                 if factories[j][0] == -1:
                     attackable_ennemy_factories += [(i,j)]
     
+    orders = ["WAIT"]
+    for i in mine:
+        if factories[i][1] >= 10 and factories[i][2] < 3:
+            orders += ["INC " + str(i)]
+            factories[i][1] -= 10
+    
     costs = []
+            
     for i,j in attackable_neutral_factories + attackable_ennemy_factories:
         troops = factories[j][1]
         troops_respawn = factories[j][2] * factory_links[i][j]
@@ -25,11 +32,10 @@ def get_best_orders():
             costs += [(i,j,price_to_attack)]
     
     costs.sort(key=lambda x: x[2])
-    
-    orders = []
     for i, j, cost in costs:
-        orders += ["MOVE " + str(i) + " " + str(j) + " " + str(cost)]
+        if factories[i][1] >= cost:
+            orders += ["MOVE " + str(i) + " " + str(j) + " " + str(cost)]
+            factories[i][1] -= cost
         
-    if not orders:
-        orders = ["WAIT"]
+        
     return orders
