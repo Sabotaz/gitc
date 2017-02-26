@@ -8,7 +8,7 @@ arriving_troops = []
 
 def make_factories(factory_count):
     global factories, factory_links, incoming_troops, arriving_troops
-    factories = [[0,0,0] for _ in range(factory_count)]
+    factories = [[0,0,0,0] for _ in range(factory_count)]
     factory_links = [[0]*factory_count for _ in range(factory_count)]
     incoming_troops = [[0]*20 for _ in range(factory_count)]
     arriving_troops = [[0]*20 for _ in range(factory_count)]
@@ -23,10 +23,14 @@ def reset_attackers():
     incoming_troops = [[0]*20 for _ in range(config.FACTORY_COUNT)]
     arriving_troops = [[0]*20 for _ in range(config.FACTORY_COUNT)]
 
-def update_factory(entity_id, player, cyborgs, prod):
+def update_factory(entity_id, player, cyborgs, prod, freeze):
     factories[entity_id][0] = player
     factories[entity_id][1] = cyborgs
     factories[entity_id][2] = prod
+    factories[entity_id][3] = freeze
+
+def update_bomb(entity_id, player, start, end, tours):
+    pass
 
 def update_troop(entity_id, player, start, end, size, tours):
     if player == 1:
