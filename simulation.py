@@ -1,6 +1,48 @@
 from datatypes import *
 import config
 
+def interest(j): # is it interesting to attack this city
+    coef_neutral = 5
+    coef_prod = 1
+    coef_position = 10
+    
+    position_bonus = 0 # is it more close to allies than to ennemies
+    pos_ennemies = 0
+    ennemies = 1
+    pos_allies = 0
+    allies = 1
+    for i in range(config.FACTORY_COUNT):
+        if i != j:
+            if factories[i][0] == 1:
+                pos_allies += (20 - factory_links[i][j])
+                allies += 1
+            elif factories[i][0] == -1:
+                pos_ennemies += (20 - factory_links[i][j])
+                ennemies += 1
+    position_bonus = (pos_allies / allies)# - (pos_ennemies / ennemies)
+    
+    return coef_neutral * (factories[j][0] == 0) + coef_prod * factories[j][2] + int(coef_position * position_bonus)
+    
+def defences(j):
+    troops = factories[j][1]
+    min_ennemy_link = 20
+    for i in range(config.FACTORY_COUNT):
+        if i != j:
+            if factories[i][0] == -1:
+                min_ennemy_link = min(min_ennemy_link,factory_links[i][j])
+    
+    troops_respawn = factories[j][2] * min_ennemy_link
+    
+    incomming = sum(incoming_troops[j])
+    arriving = sum(arriving_troops[j])
+    
+    defence = troops + troops_respawn + arriving - incomming -1
+    
+    return defence
+    
+def is_it_safe_to_inc(j):
+    return defences(j) > 10
+
 def get_best_orders():
     mine = [i for i in range(config.FACTORY_COUNT) if factories[i][0] == 1]
     attackable_neutral_factories = []
@@ -16,7 +58,7 @@ def get_best_orders():
     
     orders = ["WAIT"]
     for i in mine:
-        if factories[i][1] >= 10 and factories[i][2] < 3:
+        if factories[i][2] < 3 and factories[i][1] >= 10 and (is_it_safe_to_inc(i) or factories[i][2] == 0):
             orders += ["INC " + str(i)]
             factories[i][1] -= 10
     
@@ -27,11 +69,11 @@ def get_best_orders():
         troops_respawn = factories[j][2] * factory_links[i][j]
         incomming = sum(incoming_troops[j])
         arriving = sum(arriving_troops[j])
-        price_to_attack = troops + troops_respawn + incomming - arriving + 1
+        price_to_attack = troops + troops_respawn + incomming - arriving + 1 + 10*(factories[j][2]==0)
         if price_to_attack > 0:
             costs += [(i,j,price_to_attack)]
     
-    costs.sort(key=lambda x: x[2])
+    costs.sort(key=lambda x: (interest(x[1]),x[2]))
     for i, j, cost in costs:
         if factories[i][1] >= cost:
             orders += ["MOVE " + str(i) + " " + str(j) + " " + str(cost)]
