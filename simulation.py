@@ -1,5 +1,6 @@
 from datatypes import *
 import config
+import utils
 
 def interest(j): # is it interesting to attack this city
     coef_neutral = 5
@@ -70,7 +71,7 @@ def get_best_orders():
             
     for i,j in attackable_neutral_factories + attackable_ennemy_factories:
         troops = factories[j][1]
-        troops_respawn = factories[j][2] * factory_links[i][j]
+        troops_respawn = factories[j][2] * factory_links[i][j] if factories[j][0]!=0 else 0
         incomming = sum(incoming_troops[j])
         arriving = sum(arriving_troops[j])
         price_to_attack = troops + troops_respawn + incomming - arriving + 1 + 10*(factories[j][2]==0)
