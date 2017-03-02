@@ -4,23 +4,27 @@ import config
 def interest(j): # is it interesting to attack this city
     coef_neutral = 5
     coef_prod = 1
-    coef_position = 10
+    coef_position_ennemies = 1
+    coef_position_allies = 2
+    coef_position = 0.1
     
     position_bonus = 0 # is it more close to allies than to ennemies
     pos_ennemies = 0
-    ennemies = 1
+    ennemies = 0
     pos_allies = 0
-    allies = 1
+    allies = 0
     for i in range(config.FACTORY_COUNT):
         if i != j:
             if factories[i][0] == 1:
-                pos_allies += (20 - factory_links[i][j])
+                pos_allies += factory_links[i][j]
                 allies += 1
             elif factories[i][0] == -1:
-                pos_ennemies += (20 - factory_links[i][j])
+                pos_ennemies += factory_links[i][j]
                 ennemies += 1
-    position_bonus = (pos_allies / allies)# - (pos_ennemies / ennemies)
-    
+    #position_bonus = (pos_allies / allies)# - (pos_ennemies / ennemies)
+    position_bonus_ennemies = (pos_ennemies / ennemies) if ennemies > 0 else 20
+    position_bonus_allies = (20 - pos_allies / allies) if allies > 0 else 0
+    position_bonus = coef_position_ennemies * position_bonus_ennemies + coef_position_allies * position_bonus_allies
     return coef_neutral * (factories[j][0] == 0) + coef_prod * factories[j][2] + int(coef_position * position_bonus)
     
 def defences(j):
@@ -73,7 +77,7 @@ def get_best_orders():
         if price_to_attack > 0:
             costs += [(i,j,price_to_attack)]
     
-    costs.sort(key=lambda x: (interest(x[1]),x[2]))
+    costs.sort(key=lambda x: (interest(x[1]),x[2]), reverse=True)
     for i, j, cost in costs:
         if factories[i][1] >= cost:
             orders += ["MOVE " + str(i) + " " + str(j) + " " + str(cost)]
