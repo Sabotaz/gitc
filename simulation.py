@@ -3,11 +3,11 @@ import config
 import utils
 
 def interest(j): # is it interesting to attack this city
-    coef_neutral = 5
-    coef_prod = 1
+    coef_neutral = 3
+    coef_prod = 10
     coef_position_ennemies = 1
-    coef_position_allies = 2
-    coef_position = 0.1
+    coef_position_allies = 3
+    coef_position = 0.3
     
     position_bonus = 0 # is it more close to allies than to ennemies
     pos_ennemies = 0
@@ -41,14 +41,28 @@ def defences(j):
     incomming = sum(incoming_troops[j])
     arriving = sum(arriving_troops[j])
     
-    defence = troops + troops_respawn + arriving - incomming -1
+    defence = troops + troops_respawn + arriving - incomming
     
     return defence
     
 def is_it_safe_to_inc(j):
-    return defences(j) > 10
+    next_inc = factories[j][2] + 1
+    min_lien = 20
+    near_fact = None
+    for k in range(config.FACTORY_COUNT):
+        if factories[k][0] == -1:
+            min_lien = min(min_lien, factory_links[k][j])
+            near_fact = k
+    if near_fact:
+        troops = factories[near_fact][1] - ((factory_links[k][j] - 1) * next_inc + factory_links[k][1])
+        can_be_taken = troops > defences(j) - 10
+    else:
+        can_be_taken = False
+        
+    cyborg_reduction = 10.0 / score
+    return defences(j) >= 10 and not can_be_taken and cyborg_reduction < 0.05
     
-def estimate_fights(j): # positive:ally  -  negative:ennemie
+def estimate_fights(j, tours = 20): # positive:ally  -  negative:ennemie
     player = factories[j][0]
     troops = factories[j][1]
     neutral = False
@@ -57,7 +71,7 @@ def estimate_fights(j): # positive:ally  -  negative:ennemie
     else:
         neutral = True
     
-    for t in range(20):
+    for t in range(tours):
         if player == -1:
             troops -= factories[j][2]
         elif player == 1:
@@ -77,12 +91,12 @@ def estimate_fights(j): # positive:ally  -  negative:ennemie
         if troops < 0 and not neutral:
             player = -1
     return abs(troops), player
-
+    
 def bombing_interest(ij):
     i, j = ij
     coef_prod = 3
-    coef_troops = 0.2
-    coef_multiple = 1
+    coef_troops = 0
+    coef_multiple = 0
     coef_dist = 0.3
     
     troops = coef_troops * factories[j][1]
@@ -94,20 +108,30 @@ def bombing_interest(ij):
     count *= coef_multiple
     dist = (20 - factory_links[i][j]) * coef_dist
     
-    return troops + prod + count + dist
+    return troops + prod + dist + count
 
 def get_bomb_now():
     mine = [i for i in range(config.FACTORY_COUNT) if factories[i][0] == 1]
     ennemies = [i for i in range(config.FACTORY_COUNT) if factories[i][0] == -1]
+    
+    if not mine or not ennemies:
+        return ([], 0)
+        
     bombing = []
     for i in mine:
         for j in ennemies:
-            bombing += [(i,j)]
+            is_already_attacking = False
+            for k,l,_ in my_bombs:
+                if j == l:
+                    is_already_attacking = True
+            if not is_already_attacking:
+                bombing += [(i,j)]
     bombing.sort(key=bombing_interest)
     i, j = bombing[-1]
     bombing_score = bombing_interest((i, j))
     return ["BOMB " + str(i) + " " + str(j)], bombing_score
-
+    
+    
 def get_best_orders():
     mine = [i for i in range(config.FACTORY_COUNT) if factories[i][0] == 1]
     attackable_neutral_factories = []
@@ -120,7 +144,7 @@ def get_best_orders():
                 estimation, player = estimate_fights(i)
                 if player != 1:
                     defendable_allies_factories += [(i2,i)]
-    
+
     for i in mine:
         if factories[i][1] > 0:
             possibles = [j for j in range(config.FACTORY_COUNT) if factory_links[i][j] != 0]
@@ -139,13 +163,23 @@ def get_best_orders():
     costs = []
             
     for i,j in attackable_neutral_factories + attackable_ennemy_factories + defendable_allies_factories:
-        troops = factories[j][1]
-        estimation, player = estimate_fights(j)
-        if player != 1:
-            troops_respawn = factories[j][2] * (factory_links[i][j] + 1) if factories[j][0]!=0 else 0
+        use_estimation = True
+        
+        if use_estimation:
+            estimation, player = estimate_fights(j)
+            if player != 1:
+                needeed, _ = estimate_fights(j, factory_links[i][j]+1)
+                price_to_attack = needeed + 1 + 9*(factories[j][2]==0)
+                if price_to_attack > 0:
+                    costs += [(i,j,price_to_attack)]
+        else:
+            troops = factories[j][1]
+            troops_respawn = 0
+            if factories[j][0] != 0:
+                troops_respawn = factories[j][2] * (factory_links[i][j]+1)
             incomming = sum(incoming_troops[j])
             arriving = sum(arriving_troops[j])
-            price_to_attack = troops + troops_respawn + incomming - arriving + 1 + 10*(factories[j][2]==0)
+            price_to_attack = troops + troops_respawn + incomming - arriving + 1 + 9*(factories[j][2]==0)
             if price_to_attack > 0:
                 costs += [(i,j,price_to_attack)]
     
@@ -159,3 +193,5 @@ def get_best_orders():
         
         
     return orders
+    
+
