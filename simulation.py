@@ -119,10 +119,7 @@ def bombing_interest(ij):
 def get_bomb_now():
     mine = [i for i in range(config.FACTORY_COUNT) if factories[i][0] == 1]
     ennemies = [i for i in range(config.FACTORY_COUNT) if factories[i][0] == -1]
-    
-    if not mine or not ennemies:
-        return ([], 0)
-        
+ 
     bombing = []
     for i in mine:
         for j in ennemies:
@@ -132,6 +129,10 @@ def get_bomb_now():
                     is_already_attacked = True
             if not is_already_attacked:
                 bombing += [(i,j)]
+    
+    if not bombing:
+        return ([], 0)
+        
     bombing.sort(key=bombing_interest)
     i, j = bombing[-1]
     bombing_score = bombing_interest((i, j))
