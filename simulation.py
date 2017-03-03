@@ -26,7 +26,11 @@ def interest(j): # is it interesting to attack this city
     position_bonus_ennemies = (pos_ennemies / ennemies) if ennemies > 0 else 20
     position_bonus_allies = (20 - pos_allies / allies) if allies > 0 else 0
     position_bonus = coef_position_ennemies * position_bonus_ennemies + coef_position_allies * position_bonus_allies
-    return coef_neutral * (factories[j][0] == 0) + coef_prod * factories[j][2] + int(coef_position * position_bonus)
+    cyborg_reduction = 0
+    if score > 0:
+        cyborg_reduction = 10.0 / score
+    malus_no_inc = 200 * (factories[j][2] == 0) * (cyborg_reduction > 0.1)
+    return coef_neutral * (factories[j][0] == 0) + coef_prod * factories[j][2] + int(coef_position * position_bonus) - malus_no_inc
     
 def defences(j):
     troops = factories[j][1]
@@ -58,9 +62,11 @@ def is_it_safe_to_inc(j):
         can_be_taken = troops > defences(j) - 10
     else:
         can_be_taken = False
-        
-    cyborg_reduction = 10.0 / score
-    return defences(j) >= 10 and not can_be_taken and cyborg_reduction < 0.05
+    can_be_taken |= estimate_fights(j, tours = 20)[1] != 1
+    cyborg_reduction = 0
+    if score > 0:
+        cyborg_reduction = 10.0 / score
+    return defences(j) >= 10 and not can_be_taken and cyborg_reduction <= 0.10
     
 def estimate_fights(j, tours = 20): # positive:ally  -  negative:ennemie
     player = factories[j][0]
@@ -120,11 +126,11 @@ def get_bomb_now():
     bombing = []
     for i in mine:
         for j in ennemies:
-            is_already_attacking = False
+            is_already_attacked = factories[j][3] >= factory_links[i][j]
             for k,l,_ in my_bombs:
                 if j == l:
-                    is_already_attacking = True
-            if not is_already_attacking:
+                    is_already_attacked = True
+            if not is_already_attacked:
                 bombing += [(i,j)]
     bombing.sort(key=bombing_interest)
     i, j = bombing[-1]
@@ -179,7 +185,7 @@ def get_best_orders():
                 troops_respawn = factories[j][2] * (factory_links[i][j]+1)
             incomming = sum(incoming_troops[j])
             arriving = sum(arriving_troops[j])
-            price_to_attack = troops + troops_respawn + incomming - arriving + 1 + 9*(factories[j][2]==0)
+            price_to_attack = troops + troops_respawn + incomming - arriving + 1 + 9*(factories[j][2]==0)*is_it_safe_to_inc(j)
             if price_to_attack > 0:
                 costs += [(i,j,price_to_attack)]
     

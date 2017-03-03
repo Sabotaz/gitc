@@ -23,18 +23,20 @@ def add_factory_link(factory_1, factory_2, distance):
     factory_links[factory_2][factory_1] = distance
 
 def reset_attackers():
-    global incoming_troops, arriving_troops, my_bombs
+    global incoming_troops, arriving_troops, my_bombs, score
     incoming_troops = [[0]*20 for _ in range(config.FACTORY_COUNT)]
     arriving_troops = [[0]*20 for _ in range(config.FACTORY_COUNT)]
     my_bombs = []
+    score = 0
 
 def update_factory(entity_id, player, cyborgs, prod, freeze):
     factories[entity_id][0] = player
     factories[entity_id][1] = cyborgs
     factories[entity_id][2] = prod
     factories[entity_id][3] = freeze
-    global score
-    score += cyborgs
+    if player == 1:
+        global score
+        score += cyborgs
 
 def update_bomb(entity_id, player, start, end, tours):
     global my_bombs
