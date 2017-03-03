@@ -6,6 +6,7 @@ factory_links = None
 incoming_troops = []
 arriving_troops = []
 minimal_path = []
+bombs = 2
 
 def make_factories(factory_count):
     global factories, factory_links, incoming_troops, arriving_troops, minimal_path
