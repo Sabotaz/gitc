@@ -29,7 +29,7 @@ def interest(j): # is it interesting to attack this city
     cyborg_reduction = 0
     if score > 0:
         cyborg_reduction = 10.0 / score
-    malus_no_inc = 200 * (factories[j][2] == 0) * (cyborg_reduction > 0.1)
+    malus_no_inc = 200 * (factories[j][2] == 0) * (cyborg_reduction > 0.15)
     return coef_neutral * (factories[j][0] == 0) + coef_prod * factories[j][2] + int(coef_position * position_bonus) - malus_no_inc
     
 def defences(j):
@@ -66,7 +66,7 @@ def is_it_safe_to_inc(j):
     cyborg_reduction = 0
     if score > 0:
         cyborg_reduction = 10.0 / score
-    return defences(j) >= 10 and not can_be_taken and cyborg_reduction <= 0.10
+    return defences(j) >= 10 and not can_be_taken and cyborg_reduction <= 0.15
     
 def estimate_fights(j, tours = 20): # positive:ally  -  negative:ennemie
     player = factories[j][0]
