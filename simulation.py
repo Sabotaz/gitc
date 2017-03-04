@@ -29,7 +29,7 @@ def interest(j): # is it interesting to attack this city
     cyborg_reduction = 0
     if score > 0:
         cyborg_reduction = 10.0 / score
-    malus_no_inc = 200 * (factories[j][2] == 0) * (cyborg_reduction > 0.15)
+    malus_no_inc = 200 * (factories[j][2] == 0) * (cyborg_reduction > 0.10)
     return coef_neutral * (factories[j][0] == 0) + coef_prod * factories[j][2] + int(coef_position * position_bonus) - malus_no_inc
     
 def defences(j):
@@ -156,7 +156,7 @@ def update_path(i, j):
     for k in range(config.FACTORY_COUNT):
         if k != i and k != j:
             if factories[k][0] == 1 or (factories[i][0] == 0 and factories[i][1] == 0):
-                d_ikj = factory_links[i][k] + factory_links[k][j]
+                d_ikj = factory_links[i][k] + factory_links[k][j] + 1
                 if d_ikj <= d:
                     d = d_ikj
                     meilleur = k
@@ -166,6 +166,7 @@ def update_path(i, j):
 def get_best_orders():
     mine = [i for i in range(config.FACTORY_COUNT) if factories[i][0] == 1]
     neutrals = [i for i in range(config.FACTORY_COUNT) if factories[i][0] == 0]
+    neutrals_no_def = [i for i in neutrals if factories[i][1] == 0]
     ennemies = [i for i in range(config.FACTORY_COUNT) if factories[i][0] == -1]
     attackable_neutral_factories = []
     attackable_ennemy_factories = []
@@ -219,7 +220,7 @@ def get_best_orders():
     costs.sort(key=lambda x: (interest(x[1]),x[2]), reverse=True)
     attacked = set()
     for i, j, cost in costs:
-        if factories[i][1] >= cost and j not in attacked:
+        if factories[i][1] >= cost and j not in attacked and interest(j) > -150:
             j = update_path(i, j)
             orders += ["MOVE " + str(i) + " " + str(j) + " " + str(cost)]
             factories[i][1] -= cost
@@ -227,7 +228,7 @@ def get_best_orders():
         
             
     for i in get_evacuations():
-        for i2 in sorted(mine, key=lambda x: factory_links[i][x]) + sorted(neutrals, key=lambda x: factory_links[i][x]):
+        for i2 in sorted(mine + neutrals_no_def, key=lambda x: factory_links[i][x]):
             if i != i2:
                 orders += ["MOVE " + str(i) + " " + str(i2) + " " + str(factories[i][1])]
                 break
