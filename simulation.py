@@ -150,9 +150,23 @@ def get_bomb_now():
     bombing_score = bombing_interest((i, j))
     return ["BOMB " + str(i) + " " + str(j)], bombing_score
     
+def update_path(i, j):
+    d = factory_links[i][j]
+    meilleur = j
+    for k in range(config.FACTORY_COUNT):
+        if k != i and k != j:
+            if factories[k][0] == 1 or (factories[i][0] == 0 and factories[i][1] == 0):
+                d_ikj = factory_links[i][k] + factory_links[k][j]
+                if d_ikj <= d:
+                    d = d_ikj
+                    meilleur = k
+    
+    return meilleur
     
 def get_best_orders():
     mine = [i for i in range(config.FACTORY_COUNT) if factories[i][0] == 1]
+    neutrals = [i for i in range(config.FACTORY_COUNT) if factories[i][0] == 0]
+    ennemies = [i for i in range(config.FACTORY_COUNT) if factories[i][0] == -1]
     attackable_neutral_factories = []
     attackable_ennemy_factories = []
     defendable_allies_factories = []
@@ -206,15 +220,17 @@ def get_best_orders():
     attacked = set()
     for i, j, cost in costs:
         if factories[i][1] >= cost and j not in attacked:
+            j = update_path(i, j)
             orders += ["MOVE " + str(i) + " " + str(j) + " " + str(cost)]
             factories[i][1] -= cost
             attacked.add(j)
         
             
     for i in get_evacuations():
-        for i2 in sorted(mine, key=lambda x: factory_links[i][x]):
+        for i2 in sorted(mine, key=lambda x: factory_links[i][x]) + sorted(neutrals, key=lambda x: factory_links[i][x]):
             if i != i2:
                 orders += ["MOVE " + str(i) + " " + str(i2) + " " + str(factories[i][1])]
+                break
                 
     return orders
     
