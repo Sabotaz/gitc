@@ -115,6 +115,18 @@ def bombing_interest(ij):
     dist = (20 - factory_links[i][j]) * coef_dist
     
     return troops + prod + dist + count
+    
+def get_evacuations():
+    evacuation = []
+    mine = [i for i in range(config.FACTORY_COUNT) if factories[i][0] == 1]
+    for j, tour in ennemies_bombs:
+        for i in mine:
+            if factory_links[i][j] == tour + 1:
+                #evacuate
+                evacuation += [i]
+                
+    return evacuation
+        
 
 def get_bomb_now():
     mine = [i for i in range(config.FACTORY_COUNT) if factories[i][0] == 1]
@@ -198,7 +210,12 @@ def get_best_orders():
             factories[i][1] -= cost
             attacked.add(j)
         
-        
+            
+    for i in get_evacuations():
+        for i2 in sorted(mine, key=lambda x: factory_links[i][x]):
+            if i != i2:
+                orders += ["MOVE " + str(i) + " " + str(i2) + " " + str(factories[i][1])]
+                
     return orders
     
 
