@@ -36,11 +36,6 @@ def interest(p, j): # is it interesting to attack this city
     for i, tour in ennemies_bombs:
         if factory_links[i][j] - tour == factory_links[p][j] + 1 and (factories[j][2] == 3 or j == first_spawn):
             malus_bomb = 200
-        #err("a:", p, j)
-        #err(factory_links[i][j], tour, factory_links[p][j])
-        #err(malus_bomb == 200)
-    err("a:", p, j)
-    err(coef_neutral * (factories[j][0] == 0) + coef_prod * factories[j][2] + int(coef_position * position_bonus) - malus_no_inc - malus_bomb)
                 
     return coef_neutral * (factories[j][0] == 0) + coef_prod * factories[j][2] + int(coef_position * position_bonus) - malus_no_inc - malus_bomb
     
@@ -251,8 +246,6 @@ def get_best_orders():
                 
                 if price_to_attack > 0 and player == 1:
                     costs += [(i,j,price_to_attack)]
-            err("e:", i, j)
-            err(estimation, player)
         else:
             troops = factories[j][1]
             troops_respawn = 0
