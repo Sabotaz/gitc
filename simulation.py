@@ -39,42 +39,6 @@ def interest(p, j): # is it interesting to attack this city
                 
     return coef_neutral * (factories[j][0] == 0) + coef_prod * factories[j][2] + int(coef_position * position_bonus) - malus_no_inc - malus_bomb
     
-def defences(j):
-    troops = factories[j][1]
-    min_ennemy_link = 20
-    for i in range(config.FACTORY_COUNT):
-        if i != j:
-            if factories[i][0] == -1:
-                min_ennemy_link = min(min_ennemy_link,factory_links[i][j])
-    
-    troops_respawn = factories[j][2] * min_ennemy_link
-    
-    incomming = sum(incoming_troops[j])
-    arriving = sum(arriving_troops[j])
-    
-    defence = troops + troops_respawn + arriving - incomming
-    
-    return defence
-    
-def is_it_safe_to_inc(j):
-    next_inc = factories[j][2] + 1
-    min_lien = 20
-    near_fact = None
-    for k in range(config.FACTORY_COUNT):
-        if factories[k][0] == -1:
-            min_lien = min(min_lien, factory_links[k][j])
-            near_fact = k
-    if near_fact:
-        troops = factories[near_fact][1] - ((factory_links[k][j] - 1) * next_inc + factory_links[k][1])
-        can_be_taken = troops > defences(j) - 10
-    else:
-        can_be_taken = False
-    can_be_taken |= estimate_fights(j, tours = 20)[1] != 1
-    cyborg_reduction = 0
-    if score > 0:
-        cyborg_reduction = 10.0 / score
-    return defences(j) >= 10 and not can_be_taken and cyborg_reduction <= 0.15
-    
 def estimate_fights(j, tours = 20, malus = 0): # positive:ally  -  negative:ennemie
     player = factories[j][0]
     troops = factories[j][1]
@@ -118,6 +82,26 @@ def estimate_fights(j, tours = 20, malus = 0): # positive:ally  -  negative:enne
         if troops < 0 and not neutral:
             player = -1
     return abs(troops), player
+    
+def is_it_safe_to_inc(j):
+    next_inc = factories[j][2] + 1
+    min_lien = 20
+    near_fact = None
+    result, player = estimate_fights(j, malus = 10)
+    for k in range(config.FACTORY_COUNT):
+        if factories[k][0] == -1:
+            min_lien = min(min_lien, factory_links[k][j])
+            near_fact = k
+    if near_fact:
+        troops = factories[near_fact][1] - ((factory_links[k][j] - 1) * next_inc + factory_links[k][1])
+        can_be_taken = troops > result - 10
+    else:
+        can_be_taken = False
+    can_be_taken |= estimate_fights(j, tours = 20)[1] != 1
+    cyborg_reduction = 0
+    if score > 0:
+        cyborg_reduction = 10.0 / score
+    return player == 1 and result >= 10 and not can_be_taken and cyborg_reduction <= 0.15
     
 def bombing_interest(ij):
     i, j = ij
@@ -236,26 +220,14 @@ def get_best_orders():
     ask_attack = up_ask_attack
             
     for i,j in attackable_neutral_factories + attackable_ennemy_factories + defendable_allies_factories:
-        use_estimation = True
-        
-        if use_estimation:
-            estimation, player = estimate_fights(j)
-            if player != 1:
-                needeed, _ = estimate_fights(j, factory_links[i][j]+1)
-                price_to_attack = needeed + 1# + 9*(factories[j][2]==0)
-                _, player = estimate_fights(i, malus = price_to_attack)
-                
-                if price_to_attack > 0 and player == 1:
-                    costs += [(i,j,price_to_attack)]
-        else:
-            troops = factories[j][1]
-            troops_respawn = 0
-            if factories[j][0] != 0:
-                troops_respawn = factories[j][2] * (factory_links[i][j]+1)
-            incomming = sum(incoming_troops[j])
-            arriving = sum(arriving_troops[j])
-            price_to_attack = troops + troops_respawn + incomming - arriving + 1# + 9*(factories[j][2]==0)*is_it_safe_to_inc(j)
-            if price_to_attack > 0:
+
+        estimation, player = estimate_fights(j)
+        if player != 1:
+            needeed, _ = estimate_fights(j, factory_links[i][j]+1)
+            price_to_attack = needeed + 1# + 9*(factories[j][2]==0)
+            _, player = estimate_fights(i, malus = price_to_attack)
+            
+            if price_to_attack > 0 and player == 1:
                 costs += [(i,j,price_to_attack)]
     
     costs.sort(key=lambda x: (interest(x[0],x[1]),x[2]), reverse=True)
