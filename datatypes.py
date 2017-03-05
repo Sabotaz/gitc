@@ -11,6 +11,7 @@ score = 0
 my_bombs = []
 ennemies_bombs = []
 ennemies_bombs_history = dict()
+first_spawn = None
 
 def make_factories(factory_count):
     global factories, factory_links, incoming_troops, arriving_troops, minimal_path
@@ -19,7 +20,7 @@ def make_factories(factory_count):
     minimal_path = [[[] for _ in range(factory_count)] for _ in range(factory_count)]
     incoming_troops = [[0]*20 for _ in range(factory_count)]
     arriving_troops = [[0]*20 for _ in range(factory_count)]
-
+    
 def add_factory_link(factory_1, factory_2, distance):
     factory_links[factory_1][factory_2] = distance
     factory_links[factory_2][factory_1] = distance
@@ -33,6 +34,7 @@ def reset_attackers():
     score = 0
 
 def update_factory(entity_id, player, cyborgs, prod, freeze):
+    global first_spawn
     factories[entity_id][0] = player
     factories[entity_id][1] = cyborgs
     factories[entity_id][2] = prod
@@ -40,6 +42,9 @@ def update_factory(entity_id, player, cyborgs, prod, freeze):
     if player == 1:
         global score
         score += cyborgs
+        if not first_spawn:
+            first_spawn = entity_id
+
 
 def update_bomb(entity_id, player, start, end, tours):
     global my_bombs, ennemies_bombs, ennemies_bombs_history
