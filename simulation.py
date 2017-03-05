@@ -228,8 +228,9 @@ def get_best_orders():
     up_ask_attack = []
     for i, j, t in ask_attack:
         if t == 0:
-            orders += ["MOVE " + str(i) + " " + str(j) + " " + str(1)]
-            factories[i][1] -= 1
+            if factories[i][0] == 1:
+                orders += ["MOVE " + str(i) + " " + str(j) + " " + str(1)]
+                factories[i][1] -= 1
         else:
             up_ask_attack += [[i, j, t-1]]
     ask_attack = up_ask_attack
