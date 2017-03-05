@@ -101,7 +101,7 @@ def is_it_safe_to_inc(j):
     cyborg_reduction = 0
     if score > 0:
         cyborg_reduction = 10.0 / score
-    return player == 1 and result >= 10 and not can_be_taken and cyborg_reduction <= 0.15
+    return player == 1 and result >= 10 and not can_be_taken and cyborg_reduction <= 0.30
     
 def bombing_interest(ij):
     i, j = ij
@@ -131,7 +131,6 @@ def get_evacuations():
                 evacuation += [i]
                 
     return evacuation
-        
 
 def get_bomb_now():
     mine = [i for i in range(config.FACTORY_COUNT) if factories[i][0] == 1]
@@ -167,7 +166,7 @@ def update_path(i, j):
                 
             if not is_bombable:
                 if factories[k][0] == 1 or (factories[i][0] == 0 and factories[i][1] == 0):
-                    d_ikj = factory_links[i][k] + factory_links[k][j] + 1
+                    d_ikj = factory_links[i][k] + factory_links[k][j]
                     if d_ikj <= d:
                         d = d_ikj
                         meilleur = k
@@ -270,5 +269,3 @@ def get_best_orders():
             ask_attack += [[i, j, 0]]
         
     return orders
-    
-

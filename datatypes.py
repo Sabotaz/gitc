@@ -5,7 +5,6 @@ factories = []
 factory_links = None
 incoming_troops = []
 arriving_troops = []
-minimal_path = []
 bombs = 2
 score = 0
 my_bombs = []
@@ -59,9 +58,9 @@ def update_bomb(entity_id, player, start, end, tours):
 
 def update_troop(entity_id, player, start, end, size, tours):
     if player == 1:
-        arriving_troops[end][tours] += size
+        arriving_troops[end][tours-1] += size
         global score
         score += size
     else:
-        incoming_troops[end][tours] += size
+        incoming_troops[end][tours-1] += size
         

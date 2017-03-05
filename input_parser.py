@@ -24,3 +24,4 @@ def init_loop():
             update_troop(entity_id, int(arg_1), int(arg_2), int(arg_3), int(arg_4), int(arg_5))
         elif entity_type == "BOMB":
             update_bomb(entity_id, int(arg_1), int(arg_2), int(arg_3), int(arg_4))
+            
