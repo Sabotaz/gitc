@@ -4,10 +4,10 @@ import utils
 
 def interest(p, j): # is it interesting to attack this city
     coef_neutral = 3
-    coef_prod = 20
-    coef_position_ennemies = 3
-    coef_position_allies = 5
-    coef_position = 0.2
+    coef_prod = 15
+    coef_position_ennemies = 4
+    coef_position_allies = 6
+    coef_position = 0.3
     
     position_bonus = 0 # is it more close to allies than to ennemies
     pos_ennemies = 0
@@ -42,6 +42,7 @@ def interest(p, j): # is it interesting to attack this city
 def estimate_fights(j, tours = 20, malus = 0): # positive:ally  -  negative:ennemie
     player = factories[j][0]
     troops = factories[j][1]
+    minimal_sent_to_keep = troops
     if player == 1:
         troops = max(0, troops - malus)
     neutral = False
@@ -74,20 +75,23 @@ def estimate_fights(j, tours = 20, malus = 0): # positive:ally  -  negative:enne
                 neutral = False
                 if combat > 0: # c'est moi qui ai gagne
                     troops = abs(troops)
+            minimal_sent_to_keep = 0
         else:
             troops += combat
         
         if troops > 0 and not neutral:
             player = 1
+            minimal_sent_to_keep = min(troops, minimal_sent_to_keep)
         if troops < 0 and not neutral:
             player = -1
-    return abs(troops), player
+            minimal_sent_to_keep = 0
+    return abs(troops), player, minimal_sent_to_keep
     
 def is_it_safe_to_inc(j):
     next_inc = factories[j][2] + 1
     min_lien = 20
     near_fact = None
-    result, player = estimate_fights(j, malus = 10)
+    result, player, _ = estimate_fights(j, malus = 10)
     for k in range(config.FACTORY_COUNT):
         if factories[k][0] == -1:
             min_lien = min(min_lien, factory_links[k][j])
@@ -143,6 +147,7 @@ def get_bomb_now():
             for k,l,_ in my_bombs:
                 if j == l:
                     is_already_attacked = True
+            is_already_attacked |= sum(arriving_troops[j]) > 0
             if not is_already_attacked:
                 bombing += [(i,j)]
     
@@ -187,7 +192,7 @@ def get_best_orders():
     for i in mine:
         for i2 in mine:
             if i2 != i:
-                estimation, player = estimate_fights(i)
+                estimation, player, _ = estimate_fights(i)
                 if player != 1:
                     defendable_allies_factories += [(i2,i)]
 
@@ -220,11 +225,11 @@ def get_best_orders():
             
     for i,j in attackable_neutral_factories + attackable_ennemy_factories + defendable_allies_factories:
 
-        estimation, player = estimate_fights(j)
+        estimation, player, _ = estimate_fights(j)
         if player != 1:
-            needeed, _ = estimate_fights(j, factory_links[i][j]+1)
+            needeed, _, _ = estimate_fights(j, factory_links[i][j]+1)
             price_to_attack = needeed + 1# + 9*(factories[j][2]==0)
-            _, player = estimate_fights(i, malus = price_to_attack)
+            _, player, _ = estimate_fights(i, malus = price_to_attack)
             
             if price_to_attack > 0 and player == 1:
                 costs += [(i,j,price_to_attack)]
@@ -242,17 +247,22 @@ def get_best_orders():
     for i in get_evacuations():
         for i2 in sorted(mine + neutrals_no_def, key=lambda x: factory_links[i][x]):
             if i != i2:
-                orders += ["MOVE " + str(i) + " " + str(i2) + " " + str(factories[i][1])]
-                break
+                is_bombable = False
+                for l, tour in ennemies_bombs:
+                    if factory_links[l][i2] - tour == factory_links[i][i2] + 1 and (factories[i2][2] == 3 or i2 == first_spawn):
+                        is_bombable = True
+                if not is_bombable:
+                    orders += ["MOVE " + str(i) + " " + str(i2) + " " + str(factories[i][1])]
+                    break
                 
     upgradables = [i for i in mine if factories[i][2] < 3]
     for i in upgradables:
-        estimation, player = estimate_fights(i)
+        estimation, player, _ = estimate_fights(i)
         if player == 1:
             senders = []
             for j in mine:
                 if i != j and factories[j][1] >= 10:
-                    estimation, player = estimate_fights(j, malus=10)
+                    estimation, player, _ = estimate_fights(j, malus=10)
                     if player == 1:
                         senders += [j]
             if senders:
@@ -267,5 +277,22 @@ def get_best_orders():
             orders += ["BOMB " + str(i) + " " + str(j)]
             bombs -= 1
             ask_attack += [[i, j, 0]]
-        
+            
+    for i in mine:
+        if factories[i][2] == 3:
+            estimation, player, minimal_sent_to_keep = estimate_fights(i)
+            sent = 1 * (minimal_sent_to_keep > 0)
+            if player == 1 and sent > 0:
+                            
+                for i2 in sorted(mine + neutrals_no_def, key=lambda x: factory_links[i][x]):
+                    if i != i2 and factories[i2][2] < 3:
+                        is_bombable = False
+                        for l, tour in ennemies_bombs:
+                            if factory_links[l][i2] - tour == factory_links[i][i2] + 1 and (factories[i2][2] == 3 or i2 == first_spawn):
+                                is_bombable = True
+                        if not is_bombable:
+                            orders += ["MOVE " + str(i) + " " + str(i2) + " " + str(sent)]
+                            factories[i][1] -= sent
+                            break
+                    
     return orders

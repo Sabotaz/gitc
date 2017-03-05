@@ -25,9 +25,11 @@ def add_factory_link(factory_1, factory_2, distance):
     factory_links[factory_2][factory_1] = distance
 
 def reset_attackers():
-    global incoming_troops, arriving_troops, my_bombs, ennemies_bombs, score
+    global incoming_troops, arriving_troops, my_bombs, ennemies_bombs, score, first_spawn
     incoming_troops = [[0]*20 for _ in range(config.FACTORY_COUNT)]
     arriving_troops = [[0]*20 for _ in range(config.FACTORY_COUNT)]
+    if not ennemies_bombs:
+        first_spawn = -1
     my_bombs = []
     ennemies_bombs = []
     score = 0
